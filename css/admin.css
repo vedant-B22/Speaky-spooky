@@ -1,0 +1,161 @@
+/* ============================================================
+   Admin Dashboard Extra Styles — Speaky-Spooky
+   ============================================================ */
+
+.admin-sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: rgba(139,26,26,0.15);
+  border: 1px solid rgba(139,26,26,0.3);
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--crimson-light);
+  margin-top: 10px;
+}
+.admin-badge-topbar {
+  padding: 4px 14px;
+  background: rgba(139,26,26,0.15);
+  border: 1px solid rgba(139,26,26,0.3);
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--crimson-light);
+}
+
+/* ── Participant search dropdown ── */
+.participant-search-results {
+  background: var(--ink-surface);
+  border: 1px solid var(--ink-border);
+  border-radius: var(--radius-md);
+  margin-top: 6px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.participant-search-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.participant-search-item:hover { background: var(--ink-mid); }
+.participant-search-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gold-pale);
+  border: 1px solid rgba(196,164,74,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+.participant-search-info { flex: 1; min-width: 0; }
+.participant-search-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+.participant-search-email { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.participant-selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--gold-pale);
+  border: 1px solid rgba(196,164,74,0.3);
+  border-radius: var(--radius-md);
+  margin-top: 8px;
+}
+.participant-selected .t-small { flex: 1; }
+.participant-selected button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 0 4px; }
+.participant-selected button:hover { color: var(--crimson-light); }
+
+/* ── Admin gallery grid ── */
+.gallery-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.gallery-admin-card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+  background: var(--ink-surface);
+  border: 1px solid var(--ink-border);
+  aspect-ratio: 4/3;
+}
+.gallery-admin-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.gallery-admin-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5,5,8,0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  transition: var(--transition);
+}
+.gallery-admin-card:hover .gallery-admin-card-overlay { opacity: 1; }
+.gallery-admin-card-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 12px;
+  background: linear-gradient(to top, rgba(5,5,8,0.9), transparent);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ── Stat card crimson variant ── */
+.stat-card-icon--crimson {
+  background: rgba(139,26,26,0.15);
+  border-color: rgba(139,26,26,0.2);
+}
+
+/* ── Confirm button in tables ── */
+.btn-table-action {
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid var(--ink-border);
+  background: none;
+  color: var(--text-muted);
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-table-action:hover { border-color: var(--gold); color: var(--gold); }
+.btn-table-action.danger:hover { border-color: var(--crimson-light); color: var(--crimson-light); }
+.btn-table-action.approve { border-color: rgba(42,107,74,0.4); color: var(--success-light); }
+.btn-table-action.approve:hover { background: rgba(42,107,74,0.15); }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .gallery-admin-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .gallery-admin-grid { grid-template-columns: repeat(2, 1fr); }
+}

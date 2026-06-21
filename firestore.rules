@@ -1,0 +1,94 @@
+// ============================================================
+// firestore.rules — Speaky-Spooky Platform
+// Deploy with: firebase deploy --only firestore:rules
+// ============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+    function isAdmin() {
+      return isAuth() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin'
+      );
+    }
+
+    // ── Users ─────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Registrations ─────────────────────────────────────
+    match /registrations/{regId} {
+      allow read: if isAdmin() || (isAuth() && resource.data.uid == request.auth.uid);
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Slots ─────────────────────────────────────────────
+    match /slots/{slotId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.participantUid == request.auth.uid
+      );
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Results ───────────────────────────────────────────
+    match /results/{resultId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.participantUid == request.auth.uid
+      );
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Leaderboard (public read) ─────────────────────────
+    match /leaderboard/{userId} {
+      allow read: if true;   // Public leaderboard
+      allow write: if isAdmin();
+    }
+
+    // ── Materials ─────────────────────────────────────────
+    match /materials/{matId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.issuedTo == 'all' ||
+        resource.data.issuedTo == request.auth.uid
+      );
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Certificates ──────────────────────────────────────
+    match /certificates/{certId} {
+      allow read: if isAuth() && (
+        isAdmin() ||
+        resource.data.uid == request.auth.uid
+      );
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Gallery (public read) ─────────────────────────────
+    match /gallery/{imgId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Settings (admin only write, auth read) ─────────────
+    match /settings/{doc} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+  }
+}

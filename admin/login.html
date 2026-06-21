@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Speaky-Spooky</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--ink-deep); }
+    .login-wrap { width:100%; max-width:440px; padding:24px; }
+    .login-card {
+      background:var(--ink-mid);
+      border:1px solid var(--ink-border);
+      border-radius:var(--radius-xl);
+      padding:48px 40px;
+    }
+    .admin-badge {
+      display:inline-flex; align-items:center; gap:8px;
+      background:rgba(139,26,26,0.15);
+      border:1px solid rgba(139,26,26,0.3);
+      border-radius:100px;
+      padding:6px 16px;
+      font-size:0.75rem; font-weight:700; letter-spacing:0.1em;
+      text-transform:uppercase; color:var(--crimson-light);
+      margin-bottom:20px;
+    }
+    .login-decor {
+      position:fixed; inset:0; pointer-events:none; overflow:hidden;
+    }
+    .login-decor::before {
+      content:''; position:absolute;
+      top:-20%; right:-10%;
+      width:500px; height:500px;
+      background:radial-gradient(circle, rgba(139,26,26,0.08), transparent 70%);
+      border-radius:50%;
+    }
+    .login-decor::after {
+      content:''; position:absolute;
+      bottom:-20%; left:-10%;
+      width:400px; height:400px;
+      background:radial-gradient(circle, rgba(196,164,74,0.06), transparent 70%);
+      border-radius:50%;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+  <div id="toast-container"></div>
+  <div class="login-decor"></div>
+
+  <div class="login-wrap">
+    <div style="text-align:center;margin-bottom:32px;">
+      <a href="../index.html" class="nav-logo" style="justify-content:center;margin-bottom:8px;display:flex;">
+        <div class="nav-logo-mark">SS</div>
+        <div class="nav-logo-text">Speaky<span style="color:var(--gold)">-</span>Spooky</div>
+      </a>
+    </div>
+
+    <div class="login-card">
+      <div class="admin-badge">🔐 Admin Access</div>
+      <h1 class="t-title mb-8">Administrator Login</h1>
+      <p class="t-small t-muted mb-32">Restricted area. Authorised personnel only.</p>
+
+      <form id="adminLoginForm" style="display:flex;flex-direction:column;gap:20px;">
+        <div class="form-group">
+          <label class="form-label">Admin Email</label>
+          <input type="email" class="form-input" id="admin-email" placeholder="admin@speakyspooky.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="admin-password" placeholder="Admin password" required>
+        </div>
+        <div id="adminLoginError" class="form-error hidden"></div>
+        <button type="submit" class="btn btn-crimson btn-full" id="adminLoginBtn">
+          Access Admin Panel
+        </button>
+      </form>
+
+      <div class="divider mt-24 mb-16"></div>
+      <p class="t-small t-muted t-center">
+        <a href="../index.html" style="color:var(--text-muted);text-decoration:underline;">← Back to main site</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="../js/firebase-config.js"></script>
+  <script>
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('adminLoginBtn');
+      const errEl = document.getElementById('adminLoginError');
+      btn.disabled = true;
+      btn.textContent = 'Verifying…';
+      errEl.classList.add('hidden');
+
+      const email    = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value;
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        // Check admin role in Firestore
+        const userDoc = await db.collection('users').doc(cred.user.uid).get();
+        const role = userDoc.data()?.role;
+        if (role !== 'admin' && role !== 'superadmin') {
+          await auth.signOut();
+          errEl.textContent = 'Access denied. You do not have admin privileges.';
+          errEl.classList.remove('hidden');
+          btn.disabled = false;
+          btn.textContent = 'Access Admin Panel';
+          return;
+        }
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        const messages = {
+          'auth/user-not-found':     'No admin account with this email.',
+          'auth/wrong-password':     'Incorrect password.',
+          'auth/invalid-email':      'Invalid email address.',
+          'auth/invalid-credential': 'Invalid credentials.'
+        };
+        errEl.textContent = messages[err.code] || err.message;
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Access Admin Panel';
+      }
+    });
+
+    // If already logged in as admin, redirect
+    if (typeof auth !== 'undefined') {
+      auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          try {
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (['admin','superadmin'].includes(doc.data()?.role)) {
+              window.location.href = 'dashboard.html';
+            }
+          } catch(e) {}
+        }
+      });
+    }
+
+    function showToast(msg, type='info') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Speaky-Spooky</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+  <div class="loading-overlay" id="loader">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+      <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:#C4A44A;">SS</div>
+      <div class="loading-spinner"></div>
+    </div>
+  </div>
+  <div id="toast-container"></div>
+
+  <div class="dash-layout">
+
+    <!-- ── Admin Sidebar ── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <a href="../index.html" class="nav-logo">
+            <div class="nav-logo-mark">SS</div>
+            <div class="nav-logo-text">Speaky<span style="color:var(--gold)">-</span>Spooky</div>
+          </a>
+        </div>
+        <div class="admin-sidebar-badge">Admin Panel</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Overview</div>
+        <button class="sidebar-link active" onclick="showAdminPage('overview')" id="link-overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Dashboard
+        </button>
+
+        <div class="sidebar-section-label">Participants</div>
+        <button class="sidebar-link" onclick="showAdminPage('participants')" id="link-participants">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          All Participants
+          <span class="badge badge-gold" id="participantCountBadge">0</span>
+        </button>
+        <button class="sidebar-link" onclick="showAdminPage('registrations')" id="link-registrations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Registrations
+          <span class="badge badge-crimson" id="pendingRegBadge" style="display:none;">0</span>
+        </button>
+
+        <div class="sidebar-section-label">Scheduling</div>
+        <button class="sidebar-link" onclick="showAdminPage('slots')" id="link-slots">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Manage Slots
+        </button>
+        <button class="sidebar-link" onclick="showAdminPage('results')" id="link-results">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Post Results
+        </button>
+
+        <div class="sidebar-section-label">Content</div>
+        <button class="sidebar-link" onclick="showAdminPage('materials')" id="link-materials">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Training Materials
+        </button>
+        <button class="sidebar-link" onclick="showAdminPage('gallery')" id="link-gallery">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Gallery
+        </button>
+
+        <div class="sidebar-section-label">Recognition</div>
+        <button class="sidebar-link" onclick="showAdminPage('leaderboard')" id="link-leaderboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>
+          Leaderboard
+        </button>
+        <button class="sidebar-link" onclick="showAdminPage('certificates')" id="link-certificates">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+          Certificates
+        </button>
+
+        <div class="sidebar-section-label">System</div>
+        <button class="sidebar-link" onclick="showAdminPage('settings')" id="link-settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+        <button class="sidebar-link" onclick="adminSignOut()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar" id="adminAvatar" style="background:rgba(139,26,26,0.2);border-color:var(--crimson-light);color:var(--crimson-light);">A</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name" id="adminName">Admin</div>
+            <div class="sidebar-user-role" style="color:var(--crimson-light);">Administrator</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Main Content ── -->
+    <main class="dash-main">
+      <div class="dash-topbar">
+        <button class="sidebar-toggle-btn" id="sidebarToggle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="dash-topbar-title" id="adminPageTitle">Dashboard</span>
+        <div class="dash-topbar-actions">
+          <div class="admin-badge-topbar">Admin</div>
+        </div>
+      </div>
+
+      <div class="dash-content">
+
+        <!-- ── OVERVIEW ── -->
+        <div class="dash-page active" id="page-overview">
+          <div class="mb-32">
+            <h1 class="t-headline">Admin Overview</h1>
+            <p class="t-body t-secondary mt-8">Season V at a glance.</p>
+          </div>
+          <div class="stats-grid" id="adminStats">
+            <div class="stat-card">
+              <div class="stat-card-icon">👥</div>
+              <div class="stat-card-value" id="astat-participants">—</div>
+              <div class="stat-card-label">Registered Participants</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon">🗓</div>
+              <div class="stat-card-value" id="astat-slots">—</div>
+              <div class="stat-card-label">Slots Scheduled</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon">📊</div>
+              <div class="stat-card-value" id="astat-results">—</div>
+              <div class="stat-card-label">Results Posted</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon">📜</div>
+              <div class="stat-card-value" id="astat-certs">—</div>
+              <div class="stat-card-label">Certificates Issued</div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="grid-2 mt-32" style="gap:24px;">
+            <div class="card">
+              <div class="t-title mb-20">Recent Registrations</div>
+              <div id="recentRegsContainer" style="display:flex;flex-direction:column;gap:12px;">
+                <div class="skeleton" style="height:52px;border-radius:8px;"></div>
+                <div class="skeleton" style="height:52px;border-radius:8px;"></div>
+                <div class="skeleton" style="height:52px;border-radius:8px;"></div>
+              </div>
+              <button class="btn btn-ghost btn-sm w-full mt-20" onclick="showAdminPage('registrations')">View All Registrations →</button>
+            </div>
+            <div class="card">
+              <div class="t-title mb-20">Quick Actions</div>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <button class="btn btn-secondary w-full" onclick="showAdminPage('slots');setTimeout(()=>openSlotModal(),300)">
+                  + Schedule a Debate Slot
+                </button>
+                <button class="btn btn-secondary w-full" onclick="showAdminPage('results');setTimeout(()=>openResultModal(),300)">
+                  + Post Match Result
+                </button>
+                <button class="btn btn-secondary w-full" onclick="showAdminPage('materials');setTimeout(()=>openMaterialModal(),300)">
+                  + Upload Training Material
+                </button>
+                <button class="btn btn-secondary w-full" onclick="showAdminPage('leaderboard');setTimeout(()=>openLbUpdateModal(),300)">
+                  + Update Leaderboard
+                </button>
+                <button class="btn btn-secondary w-full" onclick="showAdminPage('certificates');setTimeout(()=>openCertModal(),300)">
+                  + Issue Certificate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PARTICIPANTS ── -->
+        <div class="dash-page" id="page-participants">
+          <div class="mb-32">
+            <h1 class="t-headline">All Participants</h1>
+            <p class="t-body t-secondary mt-8">View and manage every registered debater.</p>
+          </div>
+          <div class="admin-action-bar">
+            <div class="admin-search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="participantSearch" placeholder="Search by name, email…" oninput="filterParticipants()">
+            </div>
+            <div class="admin-filter-row">
+              <select class="form-select" style="width:auto;padding:10px 32px 10px 14px;" id="participantLevelFilter" onchange="filterParticipants()">
+                <option value="">All Levels</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="expert">Expert</option>
+              </select>
+            </div>
+          </div>
+          <div class="lb-full-table">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Participant</th>
+                    <th>Email</th>
+                    <th>Level</th>
+                    <th>Format</th>
+                    <th>Institution</th>
+                    <th>Points</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="participantsTableBody">
+                  <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">Loading participants…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── REGISTRATIONS ── -->
+        <div class="dash-page" id="page-registrations">
+          <div class="mb-32">
+            <h1 class="t-headline">Registrations</h1>
+            <p class="t-body t-secondary mt-8">Review and approve new participant registrations.</p>
+          </div>
+          <div class="admin-filter-row mb-24">
+            <button class="btn btn-primary btn-sm reg-filter-btn" data-filter="pending" onclick="filterRegistrations('pending')">Pending</button>
+            <button class="btn btn-ghost btn-sm reg-filter-btn" data-filter="approved" onclick="filterRegistrations('approved')">Approved</button>
+            <button class="btn btn-ghost btn-sm reg-filter-btn" data-filter="all" onclick="filterRegistrations('all')">All</button>
+          </div>
+          <div class="lb-full-table">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Level</th>
+                    <th>Format</th>
+                    <th>Registered</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="registrationsTableBody">
+                  <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Loading registrations…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SLOTS ── -->
+        <div class="dash-page" id="page-slots">
+          <div class="admin-action-bar mb-32">
+            <div>
+              <h1 class="t-headline">Manage Slots</h1>
+              <p class="t-body t-secondary mt-4">Schedule debate rounds and assign participants.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openSlotModal()">+ New Slot</button>
+          </div>
+          <div class="lb-full-table">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Round</th>
+                    <th>Participant</th>
+                    <th>Opponent</th>
+                    <th>Date & Time</th>
+                    <th>Format</th>
+                    <th>Venue</th>
+                    <th>Motion</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="slotsAdminTable">
+                  <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">Loading slots…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── RESULTS ── -->
+        <div class="dash-page" id="page-results">
+          <div class="admin-action-bar mb-32">
+            <div>
+              <h1 class="t-headline">Post Results</h1>
+              <p class="t-body t-secondary mt-4">Record match outcomes and scores.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openResultModal()">+ Post Result</button>
+          </div>
+          <div class="lb-full-table">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Round</th>
+                    <th>Participant</th>
+                    <th>Opponent</th>
+                    <th>Outcome</th>
+                    <th>Score</th>
+                    <th>Points</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="resultsAdminTable">
+                  <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">No results posted yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── MATERIALS ── -->
+        <div class="dash-page" id="page-materials">
+          <div class="admin-action-bar mb-32">
+            <div>
+              <h1 class="t-headline">Training Materials</h1>
+              <p class="t-body t-secondary mt-4">Upload and manage resources for participants.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openMaterialModal()">+ Upload Material</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px;" id="materialsAdminList">
+            <div style="text-align:center;padding:60px;color:var(--text-muted);">No materials uploaded yet.</div>
+          </div>
+        </div>
+
+        <!-- ── GALLERY ── -->
+        <div class="dash-page" id="page-gallery">
+          <div class="admin-action-bar mb-32">
+            <div>
+              <h1 class="t-headline">Gallery Management</h1>
+              <p class="t-body t-secondary mt-4">Add and organise event photos shown on the public site.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openGalleryModal()">+ Add Image</button>
+          </div>
+          <div class="gallery-admin-grid" id="galleryAdminGrid">
+            <div style="text-align:center;padding:60px;color:var(--text-muted);">No gallery images yet.</div>
+          </div>
+        </div>
+
+        <!-- ── LEADERBOARD ── -->
+        <div class="dash-page" id="page-leaderboard">
+          <div class="admin-action-bar mb-32">
+            <div>
+              <h1 class="t-headline">Leaderboard Management</h1>
+              <p class="t-body t-secondary mt-4">Update points, tiers, and rankings manually.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openLbUpdateModal()">+ Update Points</button>
+          </div>
+          <div class="lb-full-table">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Participant</th>
+                    <th>Rounds</th>
+                    <th>Wins</th>
+                    <th>Points</th>
+                    <th>Tier</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="lbAdminTable">
+                  <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Loading leaderboard…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── CERTIFICATES ── -->
+        <div class="dash-page" id="page-certificates">
+          <div class="admin-action-bar mb-32">
+            <div>
+              <h1 class="t-headline">Certificate Issuance</h1>
+              <p class="t-body t-secondary mt-4">Issue official certificates to qualifying participants.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openCertModal()">+ Issue Certificate</button>
+          </div>
+          <div class="lb-full-table">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Participant</th>
+                    <th>Season</th>
+                    <th>Achievement</th>
+                    <th>Issued On</th>
+                    <th>Cert ID</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="certsAdminTable">
+                  <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No certificates issued yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SETTINGS ── -->
+        <div class="dash-page" id="page-settings">
+          <div class="mb-32">
+            <h1 class="t-headline">Platform Settings</h1>
+            <p class="t-body t-secondary mt-8">Configure the platform for the active season.</p>
+          </div>
+          <div class="grid-2" style="gap:24px;">
+            <div class="card">
+              <div class="t-title mb-24">Season Configuration</div>
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <div class="form-group">
+                  <label class="form-label">Current Season Name</label>
+                  <input type="text" class="form-input" id="setting-season" value="Season V" placeholder="Season V">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Season Status</label>
+                  <select class="form-select" id="setting-status">
+                    <option value="active">Active</option>
+                    <option value="registration">Registration Open</option>
+                    <option value="completed">Completed</option>
+                    <option value="paused">Paused</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Registration Deadline</label>
+                  <input type="date" class="form-input" id="setting-deadline">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Season Description (shown to participants)</label>
+                  <textarea class="form-input" id="setting-description" rows="3" placeholder="Season description…" style="resize:vertical;"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="t-title mb-24">Admin Management</div>
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <p class="t-small t-muted">Promote existing users to admin role. Enter their Firebase UID or email.</p>
+                <div class="form-group">
+                  <label class="form-label">User Email</label>
+                  <input type="email" class="form-input" id="promoteEmail" placeholder="user@example.com">
+                </div>
+                <button class="btn btn-crimson" onclick="promoteToAdmin()">Promote to Admin</button>
+                <div class="divider"></div>
+                <div class="t-title mb-8" style="font-size:1rem;">Danger Zone</div>
+                <button class="btn btn-ghost" onclick="if(confirm('Reset all points? This cannot be undone.')) resetAllPoints()">Reset All Points</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /dash-content -->
+    </main>
+  </div>
+
+  <!-- ── MODALS ── -->
+
+  <!-- Slot Modal -->
+  <div class="modal-backdrop" id="slotModal">
+    <div class="modal" style="max-width:620px;">
+      <button class="modal-close" onclick="closeModal('slotModal')">✕</button>
+      <div class="t-xs t-gold mb-8">Schedule</div>
+      <h2 class="t-title" id="slotModalTitle">New Debate Slot</h2>
+      <div class="divider mt-16 mb-24"></div>
+      <form id="slotForm" style="display:flex;flex-direction:column;gap:16px;">
+        <input type="hidden" id="slotEditId">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Round Title</label>
+            <input type="text" class="form-input" id="slot-title" placeholder="e.g. Quarter-Final Round 1" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Round Number</label>
+            <input type="number" class="form-input" id="slot-roundNum" placeholder="1" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Participant (search email)</label>
+          <input type="text" class="form-input" id="slot-participantSearch" placeholder="Type email to search…" oninput="searchParticipantsForSlot()">
+          <div id="slot-participantResults" style="display:none;"></div>
+          <input type="hidden" id="slot-participantUid">
+          <input type="hidden" id="slot-participantName">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Opponent Name</label>
+            <input type="text" class="form-input" id="slot-opponent" placeholder="Opponent's name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Participant's Side</label>
+            <select class="form-select" id="slot-side">
+              <option value="Proposition">Proposition</option>
+              <option value="Opposition">Opposition</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Date & Time</label>
+            <input type="datetime-local" class="form-input" id="slot-datetime" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Format</label>
+            <select class="form-select" id="slot-format">
+              <option value="Parliamentary">Parliamentary</option>
+              <option value="British Style">British Style</option>
+              <option value="Lincoln-Douglas">Lincoln-Douglas</option>
+              <option value="Policy">Policy Debate</option>
+              <option value="Open">Open Format</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motion</label>
+          <input type="text" class="form-input" id="slot-motion" placeholder="This House Believes that…">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Venue / Platform</label>
+            <input type="text" class="form-input" id="slot-venue" placeholder="Main Hall / Zoom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Adjudicator</label>
+            <input type="text" class="form-input" id="slot-adjudicator" placeholder="Adjudicator name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes for Participant</label>
+          <textarea class="form-input" id="slot-notes" rows="2" placeholder="Any special instructions…" style="resize:vertical;"></textarea>
+        </div>
+        <div id="slotFormError" class="form-error hidden"></div>
+        <button type="submit" class="btn btn-primary btn-full">Save Slot</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Result Modal -->
+  <div class="modal-backdrop" id="resultModal">
+    <div class="modal" style="max-width:620px;">
+      <button class="modal-close" onclick="closeModal('resultModal')">✕</button>
+      <div class="t-xs t-gold mb-8">Results</div>
+      <h2 class="t-title">Post Match Result</h2>
+      <div class="divider mt-16 mb-24"></div>
+      <form id="resultForm" style="display:flex;flex-direction:column;gap:16px;">
+        <input type="hidden" id="result-editId">
+        <div class="form-group">
+          <label class="form-label">Participant (search email)</label>
+          <input type="text" class="form-input" id="result-participantSearch" placeholder="Type email…" oninput="searchParticipantsForResult()">
+          <div id="result-participantResults" style="display:none;"></div>
+          <input type="hidden" id="result-participantUid">
+          <input type="hidden" id="result-participantName">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Round Number</label>
+            <input type="number" class="form-input" id="result-roundNum" placeholder="1" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Outcome</label>
+            <select class="form-select" id="result-outcome">
+              <option value="win">Win</option>
+              <option value="loss">Loss</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Participant Score</label>
+            <input type="number" class="form-input" id="result-myScore" placeholder="e.g. 78" min="0" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Opponent Score</label>
+            <input type="number" class="form-input" id="result-opponentScore" placeholder="e.g. 72" min="0" max="100">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Opponent Name</label>
+            <input type="text" class="form-input" id="result-opponent" placeholder="Opponent name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Points Awarded</label>
+            <input type="number" class="form-input" id="result-points" placeholder="e.g. 120" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motion</label>
+          <input type="text" class="form-input" id="result-motion" placeholder="Debate motion">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Participant's Side</label>
+            <select class="form-select" id="result-mySide">
+              <option value="Proposition">Proposition</option>
+              <option value="Opposition">Opposition</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Format</label>
+            <select class="form-select" id="result-format">
+              <option value="Parliamentary">Parliamentary</option>
+              <option value="British Style">British Style</option>
+              <option value="Lincoln-Douglas">Lincoln-Douglas</option>
+              <option value="Policy">Policy</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Adjudicator Feedback (visible to participant)</label>
+          <textarea class="form-input" id="result-feedback" rows="3" placeholder="Feedback notes for participant…" style="resize:vertical;"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Adjudicator Name</label>
+          <input type="text" class="form-input" id="result-adjudicator" placeholder="Judge name">
+        </div>
+        <div id="resultFormError" class="form-error hidden"></div>
+        <button type="submit" class="btn btn-primary btn-full">Post Result & Update Points</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Material Modal -->
+  <div class="modal-backdrop" id="materialModal">
+    <div class="modal" style="max-width:560px;">
+      <button class="modal-close" onclick="closeModal('materialModal')">✕</button>
+      <div class="t-xs t-gold mb-8">Materials</div>
+      <h2 class="t-title">Upload Training Material</h2>
+      <div class="divider mt-16 mb-24"></div>
+      <form id="materialForm" style="display:flex;flex-direction:column;gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-input" id="mat-title" placeholder="e.g. Motion Pack — Round 3" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-input" id="mat-desc" rows="2" placeholder="Brief description of this resource…" style="resize:vertical;"></textarea>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select class="form-select" id="mat-type">
+              <option value="pdf">PDF Document</option>
+              <option value="video">Video</option>
+              <option value="doc">Document</option>
+              <option value="link">External Link</option>
+              <option value="audio">Audio</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Issue To</label>
+            <select class="form-select" id="mat-issuedTo">
+              <option value="all">All Participants</option>
+              <option value="specific">Specific Participant</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" id="mat-specificField" style="display:none;">
+          <label class="form-label">Participant Email</label>
+          <input type="text" class="form-input" id="mat-specificEmail" placeholder="participant@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">File URL (or paste upload URL)</label>
+          <input type="url" class="form-input" id="mat-fileUrl" placeholder="https://…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Season</label>
+          <input type="text" class="form-input" id="mat-season" placeholder="V" value="V">
+        </div>
+        <div id="materialFormError" class="form-error hidden"></div>
+        <button type="submit" class="btn btn-primary btn-full">Issue Material</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Certificate Modal -->
+  <div class="modal-backdrop" id="certModal">
+    <div class="modal" style="max-width:520px;">
+      <button class="modal-close" onclick="closeModal('certModal')">✕</button>
+      <div class="t-xs t-gold mb-8">Certificate</div>
+      <h2 class="t-title">Issue Certificate</h2>
+      <div class="divider mt-16 mb-24"></div>
+      <form id="certForm" style="display:flex;flex-direction:column;gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Participant (search email)</label>
+          <input type="text" class="form-input" id="cert-participantSearch" placeholder="Type email…" oninput="searchParticipantsForCert()">
+          <div id="cert-participantResults" style="display:none;"></div>
+          <input type="hidden" id="cert-participantUid">
+          <input type="hidden" id="cert-participantName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Season</label>
+          <input type="text" class="form-input" id="cert-season" value="Season V" placeholder="Season V">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Achievement / Award Title</label>
+          <input type="text" class="form-input" id="cert-achievement" placeholder="e.g. Championship Winner, Best Speaker, Finalist">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="form-input" id="cert-notes" rows="2" placeholder="Any additional notes…" style="resize:vertical;"></textarea>
+        </div>
+        <div id="certFormError" class="form-error hidden"></div>
+        <button type="submit" class="btn btn-primary btn-full">Issue Certificate</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leaderboard Update Modal -->
+  <div class="modal-backdrop" id="lbModal">
+    <div class="modal" style="max-width:520px;">
+      <button class="modal-close" onclick="closeModal('lbModal')">✕</button>
+      <div class="t-xs t-gold mb-8">Leaderboard</div>
+      <h2 class="t-title">Update Participant Points</h2>
+      <div class="divider mt-16 mb-24"></div>
+      <form id="lbForm" style="display:flex;flex-direction:column;gap:16px;">
+        <input type="hidden" id="lb-participantUid">
+        <div class="form-group">
+          <label class="form-label">Participant (search email)</label>
+          <input type="text" class="form-input" id="lb-participantSearch" placeholder="Type email…" oninput="searchParticipantsForLb()">
+          <div id="lb-participantResults" style="display:none;"></div>
+          <input type="hidden" id="lb-participantName">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Total Points</label>
+            <input type="number" class="form-input" id="lb-points" placeholder="e.g. 1500" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tier</label>
+            <select class="form-select" id="lb-tier">
+              <option value="Participant">Participant</option>
+              <option value="Bronze">Bronze</option>
+              <option value="Silver">Silver</option>
+              <option value="Gold">Gold</option>
+              <option value="Champion">Champion</option>
+              <option value="Finalist">Finalist</option>
+              <option value="Semi-Final">Semi-Final</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Wins</label>
+            <input type="number" class="form-input" id="lb-wins" placeholder="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rounds Played</label>
+            <input type="number" class="form-input" id="lb-rounds" placeholder="0" min="0">
+          </div>
+        </div>
+        <div id="lbFormError" class="form-error hidden"></div>
+        <button type="submit" class="btn btn-primary btn-full">Update Leaderboard</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Gallery Modal -->
+  <div class="modal-backdrop" id="galleryModal">
+    <div class="modal" style="max-width:520px;">
+      <button class="modal-close" onclick="closeModal('galleryModal')">✕</button>
+      <div class="t-xs t-gold mb-8">Gallery</div>
+      <h2 class="t-title">Add Gallery Image</h2>
+      <div class="divider mt-16 mb-24"></div>
+      <form id="galleryForm" style="display:flex;flex-direction:column;gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Image URL</label>
+          <input type="url" class="form-input" id="gal-imageUrl" placeholder="https://…" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-input" id="gal-title" placeholder="Event name / description">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Caption</label>
+          <input type="text" class="form-input" id="gal-caption" placeholder="Short caption">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Display Order</label>
+            <input type="number" class="form-input" id="gal-order" placeholder="1" min="1" value="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Size</label>
+            <select class="form-select" id="gal-size">
+              <option value="normal">Normal</option>
+              <option value="tall">Tall</option>
+              <option value="wide">Wide</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Add to Gallery</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sidebar overlay -->
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99;display:none;" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin-dashboard.js"></script>
+</body>
+</html>
