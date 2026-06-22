@@ -242,19 +242,28 @@ async function loadResults() {
   const container = document.getElementById('resultsContainer');
   const empty = document.getElementById('resultsEmpty');
   try {
+    // No orderBy here — avoids needing a Firestore composite index.
+    // Sort client-side instead (same pattern as loadSlots()).
     const snap = await db.collection(COLLECTIONS.RESULTS)
       .where('participantUid', '==', currentUser.uid)
-      .orderBy('date', 'desc').get();
+      .get();
 
-    if (snap.empty) {
+    const results = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const aT = a.date?.toMillis ? a.date.toMillis() : 0;
+        const bT = b.date?.toMillis ? b.date.toMillis() : 0;
+        return bT - aT; // most recent first
+      });
+
+    if (results.length === 0) {
       if (container) container.style.display = 'none';
       if (empty) empty.style.display = 'block';
       return;
     }
     if (container) { container.innerHTML = ''; container.style.display = 'flex'; }
     if (empty) empty.style.display = 'none';
-    snap.forEach(doc => {
-      const data = { id: doc.id, ...doc.data() };
+    results.forEach(data => {
       if (container) container.appendChild(buildResultCard(data));
     });
   } catch (e) {
@@ -320,11 +329,21 @@ async function loadMaterials() {
   const container = document.getElementById('materialsContainer');
   const empty = document.getElementById('materialsEmpty');
   try {
+    // No orderBy here — avoids needing a Firestore composite index.
+    // Sort client-side instead (same pattern as loadSlots()).
     const snap = await db.collection(COLLECTIONS.MATERIALS)
       .where('issuedTo', 'in', ['all', currentUser.uid])
-      .orderBy('issuedAt', 'desc').get();
+      .get();
 
-    if (snap.empty) {
+    const materials = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const aT = a.issuedAt?.toMillis ? a.issuedAt.toMillis() : 0;
+        const bT = b.issuedAt?.toMillis ? b.issuedAt.toMillis() : 0;
+        return bT - aT; // most recent first
+      });
+
+    if (materials.length === 0) {
       if (container) container.style.display = 'none';
       if (empty) empty.style.display = 'block';
       return;
@@ -332,9 +351,8 @@ async function loadMaterials() {
     if (container) { container.innerHTML = ''; container.style.display = 'flex'; container.style.flexDirection = 'column'; container.style.gap = '16px'; }
     if (empty) empty.style.display = 'none';
     const matBadge = document.getElementById('materialsBadge');
-    if (matBadge) { matBadge.textContent = snap.size; matBadge.style.display = 'inline-flex'; }
-    snap.forEach(doc => {
-      const data = { id: doc.id, ...doc.data() };
+    if (matBadge) { matBadge.textContent = materials.length; matBadge.style.display = 'inline-flex'; }
+    materials.forEach(data => {
       if (container) container.appendChild(buildMaterialCard(data));
     });
   } catch (e) {
@@ -546,4 +564,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
