@@ -70,44 +70,70 @@ function updateSidebarUser(data) {
 }
 
 // ── Overview ─────────────────────────────────────────────────
+let overviewUnsubscribe = null;
+
 async function loadOverview() {
   if (!currentUser) return;
+
+  // Use onSnapshot for real-time stats — no more flicker/reset
+  if (overviewUnsubscribe) overviewUnsubscribe(); // clean up previous listener
+  overviewUnsubscribe = db.collection(COLLECTIONS.USERS).doc(currentUser.uid)
+    .onSnapshot((doc) => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      userData = { ...userData, ...d };
+
+      el('stat-rounds').textContent = d.roundsPlayed || 0;
+      el('stat-wins').textContent   = d.wins || 0;
+      el('stat-points').textContent = (d.points || 0).toLocaleString();
+
+      // Update sidebar name in case profile changed
+      updateSidebarUser(d);
+    }, (err) => {
+      console.warn('Stats listener error:', err.message);
+    });
+
+  // Rank — fetch once (leaderboard doesn't change every second)
   try {
-    const doc = await db.collection(COLLECTIONS.USERS).doc(currentUser.uid).get();
-    const d = doc.data() || {};
-    userData = { ...userData, ...d };
-
-    el('stat-rounds').textContent  = d.roundsPlayed || 0;
-    el('stat-wins').textContent    = d.wins || 0;
-    el('stat-points').textContent  = (d.points || 0).toLocaleString();
-
-    // Get rank
     const lb = await db.collection(COLLECTIONS.LEADERBOARD)
       .orderBy('points', 'desc').get();
     let rank = '—';
     lb.docs.forEach((doc, i) => { if (doc.id === currentUser.uid) rank = `#${i+1}`; });
     el('stat-rank').textContent = rank;
+  } catch(e) {
+    el('stat-rank').textContent = '—';
+  }
 
-    // Recent upcoming slots
-    const now = firebase.firestore.Timestamp.now();
+  // Upcoming slots
+  try {
     const slotsSnap = await db.collection(COLLECTIONS.SLOTS)
       .where('participantUid', '==', currentUser.uid)
       .where('status', '==', 'upcoming')
-      .orderBy('dateTime')
-      .limit(3).get();
+      .get();
 
     const container = document.getElementById('overviewSlots');
-    if (slotsSnap.empty) {
+    if (!container) return;
+
+    // Sort client-side to avoid needing a Firestore composite index
+    const upcoming = slotsSnap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const aT = a.dateTime?.toMillis ? a.dateTime.toMillis() : 0;
+        const bT = b.dateTime?.toMillis ? b.dateTime.toMillis() : 0;
+        return aT - bT;
+      })
+      .slice(0, 3);
+
+    if (upcoming.length === 0) {
       container.innerHTML = '<p class="t-body t-muted" style="padding:20px;">No upcoming debates scheduled yet.</p>';
     } else {
       container.innerHTML = '';
-      slotsSnap.forEach(doc => {
-        container.appendChild(buildSlotCard({ id: doc.id, ...doc.data() }, true));
-      });
+      upcoming.forEach(slot => container.appendChild(buildSlotCard(slot, true)));
     }
-  } catch (e) {
-    console.warn('Overview load error:', e.message);
-    showDemoOverview();
+  } catch(e) {
+    console.warn('Slots overview error:', e.message);
+    const container = document.getElementById('overviewSlots');
+    if (container) container.innerHTML = '<p class="t-body t-muted" style="padding:20px;">No upcoming debates scheduled yet.</p>';
   }
 }
 
@@ -128,12 +154,19 @@ async function loadSlots() {
   const container = document.getElementById('slotsContainer');
   const empty = document.getElementById('slotsEmpty');
   try {
+    // No orderBy here — avoids needing a Firestore composite index
+    // Sort client-side instead
     const snap = await db.collection(COLLECTIONS.SLOTS)
       .where('participantUid', '==', currentUser.uid)
-      .orderBy('dateTime', 'desc')
       .get();
 
-    allSlots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allSlots = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const aT = a.dateTime?.toMillis ? a.dateTime.toMillis() : 0;
+        const bT = b.dateTime?.toMillis ? b.dateTime.toMillis() : 0;
+        return bT - aT; // most recent first
+      });
     // Update badge
     const upcoming = allSlots.filter(s => s.status === 'upcoming');
     const badge = document.getElementById('slotsBadge');
@@ -483,21 +516,34 @@ async function doSignOut() {
 }
 
 // ── Init ──────────────────────────────────────────────────────
+let dashboardInitialized = false;
+
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof auth === 'undefined') return;
+
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       window.location.href = '../index.html';
       return;
     }
+    // Guard: onAuthStateChanged fires multiple times (token refresh, etc.)
+    // Only run the full dashboard load ONCE per page visit
+    if (dashboardInitialized) return;
+    dashboardInitialized = true;
+
     try {
       const docSnap = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
-      const data = docSnap.data() || {};
+      const data = docSnap.exists ? docSnap.data() : {};
       loadCustomerDashboard(user, data);
-      // Hide loader
-      setTimeout(() => document.getElementById('loader')?.remove(), 400);
+      setTimeout(() => {
+        const loader = document.getElementById('loader');
+        if (loader) { loader.classList.add('hidden'); setTimeout(() => loader.remove(), 500); }
+      }, 400);
     } catch (e) {
-      loadCustomerDashboard(user, {});
+      console.warn('Dashboard init error:', e.message);
+      // Still load - don't wipe stats with empty object
+      loadCustomerDashboard(user, { email: user.email });
     }
   });
 });
+
