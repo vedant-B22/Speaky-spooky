@@ -154,13 +154,14 @@ async function adminSignOut() {
 async function loadAdminOverview() {
   try {
     const [usersSnap, slotsSnap, resultsSnap, certsSnap, regsSnap] = await Promise.all([
-      db.collection('users').where('role','==','participant').get(),
+      db.collection('users').get(),
       db.collection('slots').get(),
       db.collection('results').get(),
       db.collection('certificates').get(),
       db.collection('registrations').orderBy('registeredAt','desc').limit(5).get()
     ]);
-    setVal2('astat-participants', usersSnap.size);
+    const participantCount = usersSnap.docs.filter(d => !['admin','superadmin'].includes(d.data().role)).length;
+    setVal2('astat-participants', participantCount);
     setVal2('astat-slots', slotsSnap.size);
     setVal2('astat-results', resultsSnap.size);
     setVal2('astat-certs', certsSnap.size);
@@ -199,9 +200,21 @@ function setVal2(id, val) { const el = document.getElementById(id); if (el) el.t
 // ── Participants ──────────────────────────────────────────
 async function loadParticipants() {
   try {
-    const snap = await db.collection('users').where('role','==','participant').orderBy('createdAt','desc').get();
-    allParticipants = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Fetch ALL users then filter client-side to avoid index/orderBy issues
+    const snap = await db.collection('users').get();
+    allParticipants = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(u => u.role !== 'admin' && u.role !== 'superadmin' && u.role !== 'removed')
+      .sort((a, b) => {
+        // Sort by createdAt descending, handle missing field
+        const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return bTime - aTime;
+      });
     renderParticipants(allParticipants);
+    // Update badge count
+    const badge = document.getElementById('participantCountBadge');
+    if (badge) badge.textContent = allParticipants.length;
   } catch(e) {
     console.warn('Participants error:', e.message);
     renderParticipants([]);
@@ -774,8 +787,12 @@ async function promoteToAdmin() {
 async function resetAllPoints() {
   try {
     const batch = db.batch();
-    const snap = await db.collection('users').where('role','==','participant').get();
-    snap.forEach(doc => { batch.update(doc.ref, { points: 0, wins: 0, losses: 0, roundsPlayed: 0 }); });
+    const snap = await db.collection('users').get();
+    snap.forEach(doc => {
+      if (!['admin','superadmin'].includes(doc.data().role)) {
+        batch.update(doc.ref, { points: 0, wins: 0, losses: 0, roundsPlayed: 0 });
+      }
+    });
     await batch.commit();
     const lb = await db.collection('leaderboard').get();
     const batch2 = db.batch();
