@@ -28,7 +28,30 @@ function switchModal(from, to) {
   setTimeout(() => openModal(to), 150);
 }
 function openRegisterModal() { openModal('registerModal'); }
-function openLoginModal()    { openModal('loginModal'); }
+function openLoginModal()    {
+  loginRole = 'participant';
+  document.querySelectorAll('#loginRoleTabs .login-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector('#loginRoleTabs .login-tab[data-role="participant"]')?.classList.add('active');
+  const createRow = document.getElementById('loginCreateAccountRow');
+  if (createRow) createRow.classList.remove('hidden');
+  openModal('loginModal');
+}
+
+// ── Login Role Toggle (Participant / Admin) ────────────────
+let loginRole = 'participant';
+function setLoginRole(role, btnEl) {
+  loginRole = role;
+  document.querySelectorAll('#loginRoleTabs .login-tab').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  // Hide "Create Account" prompt when admin tab is active — admins don't self-register
+  const createRow = document.getElementById('loginCreateAccountRow');
+  if (createRow) createRow.classList.toggle('hidden', role === 'admin');
+
+  // Reset any previous error when switching tabs
+  const errEl = document.getElementById('loginError');
+  if (errEl) errEl.classList.add('hidden');
+}
 
 // Close modal on backdrop click
 document.addEventListener('click', (e) => {
@@ -175,10 +198,26 @@ async function handleLogin(e) {
   const password = document.getElementById('login-password')?.value;
 
   try {
-    await auth.signInWithEmailAndPassword(email, password);
-    showToast('Welcome back! Loading your dashboard…', 'success');
-    closeModal('loginModal');
-    setTimeout(() => window.location.href = 'customer/dashboard.html', 1000);
+    const cred = await auth.signInWithEmailAndPassword(email, password);
+
+    if (loginRole === 'admin') {
+      // Verify admin privileges in Firestore before granting access
+      const userDoc = await db.collection(COLLECTIONS.USERS).doc(cred.user.uid).get();
+      const role = userDoc.data()?.role;
+      if (role !== 'admin' && role !== 'superadmin') {
+        await auth.signOut();
+        if (errEl) { errEl.textContent = 'Access denied. This account does not have admin privileges.'; errEl.classList.remove('hidden'); }
+        if (btn)   { btn.disabled = false; btn.textContent = 'Sign In'; }
+        return;
+      }
+      showToast('Welcome back, Admin! Loading panel…', 'success');
+      closeModal('loginModal');
+      setTimeout(() => window.location.href = 'admin/dashboard.html', 1000);
+    } else {
+      showToast('Welcome back! Loading your dashboard…', 'success');
+      closeModal('loginModal');
+      setTimeout(() => window.location.href = 'customer/dashboard.html', 1000);
+    }
   } catch (err) {
     const messages = {
       'auth/user-not-found':  'No account with this email. Please register first.',
