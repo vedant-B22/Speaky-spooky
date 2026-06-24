@@ -475,6 +475,34 @@
 }
 .link-btn:hover { color: var(--gold-light); }
 
+/* ── Login Modal Role Tabs (Participant / Admin) ── */
+.login-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--ink-surface);
+  border: 1px solid var(--ink-border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.login-tab {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent;
+  transition: var(--transition);
+}
+.login-tab:hover { color: var(--text-secondary); }
+.login-tab.active {
+  background: var(--gold);
+  color: var(--ink-deep);
+}
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .about-grid { grid-template-columns: 1fr; gap: 48px; }
