@@ -498,6 +498,12 @@
       <h2 class="t-title">Sign In to Your Account</h2>
       <p class="t-small t-muted mt-8">Access your debate schedule, results, and training materials.</p>
       <div class="divider mt-24 mb-24"></div>
+
+      <div class="login-tabs" id="loginRoleTabs">
+        <button type="button" class="login-tab active" data-role="participant" onclick="setLoginRole('participant', this)">Participant</button>
+        <button type="button" class="login-tab" data-role="admin" onclick="setLoginRole('admin', this)">Admin</button>
+      </div>
+
       <form id="loginForm" style="display:flex;flex-direction:column;gap:20px;">
         <div class="form-group">
           <label class="form-label">Email Address</label>
@@ -511,7 +517,7 @@
         <button type="submit" class="btn btn-primary btn-full" id="loginSubmitBtn">
           Sign In
         </button>
-        <p class="t-small t-muted t-center">
+        <p class="t-small t-muted t-center" id="loginCreateAccountRow">
           New debater? 
           <button type="button" class="link-btn" onclick="switchModal('loginModal','registerModal')">Create Account</button>
         </p>
